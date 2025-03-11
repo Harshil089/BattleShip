@@ -1,0 +1,864 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Battleship Game</title>
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Nosifer&display=swap');
+        body {
+            margin: 0;
+            overflow: hidden;
+            text-align: center;
+            font-family: Arial, sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            height: 100vh;
+            background-color: black;
+            flex-direction: column;
+        }
+        h2 {
+            font-family: 'Nosifer', cursive;
+            color: red;
+            text-shadow: 3px 3px 5px black;
+        }
+        .background-video {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            z-index: -1;
+        }
+        .game-container {
+            display: none;
+            justify-content: center;
+            align-items: center;
+            gap: 100px;
+            flex-direction: row;
+            position: relative;
+            z-index: 1;
+            width: 100%;
+            padding-top: 50px;
+        }
+        .grid-container {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            background: rgba(0, 0, 0, 0.5);
+            padding: 20px;
+            border-radius: 10px;
+        }
+        .grid {
+            display: grid;
+            grid-template-columns: 40px repeat(5, 70px);
+            grid-template-rows: 40px repeat(6, 70px);
+            gap: 10px;
+            position: relative;
+        }
+        .cell {
+            width: 70px;
+            height: 70px;
+            background-color: lightblue;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            border: 1px solid black;
+            cursor: pointer;
+            position: relative;
+        }
+        .cell img {
+            width: 100%;
+            height: 100%;
+        }
+        .label {
+            width: 40px;
+            height: 70px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            color: white;
+        }
+        .top-label {
+            width: 70px;
+            height: 40px;
+            text-align: center;
+            font-weight: bold;
+            color: white;
+        }
+        .declare-winner-container {
+            position: absolute;
+            bottom: 20px;
+            right: 20px;
+            z-index: 2;
+        }
+        .declare-winner-btn {
+            padding: 10px 20px;
+            font-size: 18px;
+            background-color: red;
+            color: white;
+            border: none;
+            cursor: pointer;
+            border-radius: 5px;
+        }
+        .log-container {
+            position: absolute;
+            top: 10px;
+            right: 10px;
+            background: rgba(0, 0, 0, 0.7);
+            color: white;
+            padding: 10px;
+            border-radius: 5px;
+            width: 250px;
+            height: 300px;
+            display: flex;
+            flex-direction: column;
+        }
+        #move-log {
+            flex: 1;
+            overflow-y: auto;
+            margin: 0;
+            padding: 0;
+            list-style: none;
+        }
+        .clear-log-btn {
+            background: red;
+            color: white;
+            border: none;
+            padding: 8px 15px;
+            margin: 5px 0;
+            cursor: pointer;
+            border-radius: 3px;
+            align-self: flex-end;
+        }
+        #move-log::-webkit-scrollbar {
+            width: 8px;
+        }
+        #move-log::-webkit-scrollbar-track {
+            background: rgba(255,255,255,0.1);
+            border-radius: 4px;
+        }
+        #move-log::-webkit-scrollbar-thumb {
+            background: red;
+            border-radius: 4px;
+        }
+        #team-registration h2 {
+            font-size: 60px;
+            margin-bottom: 40px;
+        }
+        #team-registration input {
+            font-size: 24px;
+            padding: 15px;
+            margin: 15px;
+            width: 300px;
+            border: 2px solid red;
+            background: black;
+            color: white;
+            font-weight: bold;
+            text-align: center;
+        }
+        #team-registration button {
+            font-size: 24px;
+            padding: 15px 30px;
+            margin-top: 20px;
+            border: none;
+            background: red;
+            color: white;
+            font-weight: bold;
+            cursor: pointer;
+            box-shadow: 2px 2px 5px black;
+        }
+        #team-registration button:hover {
+            background: darkred;
+        }
+        .draw-line-btn {
+            position: fixed;
+            bottom: 20px;
+            left: 20px;
+            padding: 10px 20px;
+            background: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            z-index: 1000;
+        }
+        .strike-line {
+            position: absolute;
+            pointer-events: none;
+            z-index: 999;
+            border-top: 4px solid red;
+        }
+        #drawing-container {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            top: 0;
+            left: 0;
+            pointer-events: none;
+        }
+        .drawing-mode {
+            cursor: crosshair;
+        }
+        .ship-placement-ui {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            background: rgba(0, 0, 0, 0.7);
+            padding: 20px;
+            border-radius: 10px;
+            color: white;
+            z-index: 1000;
+        }
+        .ship-placement-ui select, .ship-placement-ui input {
+            margin: 5px;
+            padding: 5px;
+            background: #333;
+            color: white;
+            border: 1px solid red;
+        }
+        .ship-cell {
+            background-color: #666 !important;
+        }
+        .ship-progress {
+            margin-top: 10px;
+            color: red;
+            font-weight: bold;
+        }
+        .board-selector {
+            margin-bottom: 10px;
+        }
+    </style>
+</head>
+<body>
+    <video id="background-video" class="background-video" autoplay loop>
+        <source src="/static/background.mp4" type="video/mp4">
+    </video>
+
+    <audio id="button-sound">
+        <source src="/static/Button click audio file.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="hit-sound">
+        <source src="/static/hit.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="miss-sound">
+        <source src="/static/miss.mp3" type="audio/mpeg">
+    </audio>
+
+    <audio id="background-music" autoplay loop muted>
+        <source src="/static/lobby.mp3" type="audio/mpeg">
+    </audio>
+
+    <div id="team-registration">
+        <h2>ENTER YOUR TEAM NAMES, WARRIORS!</h2>
+        <input type="text" id="team1" placeholder="Enter Team 1 Name">
+        <input type="text" id="team2" placeholder="Enter Team 2 Name">
+        <button onclick="playSoundAndStartGame()">FIGHT!</button>
+    </div>
+
+    <div id="game-area" class="game-container">
+        <div class="board-container">
+            <h2 id="team1-label">Player Board</h2>
+            <div class="grid-container">
+                <div class="grid" id="player-board"></div>
+            </div>
+        </div>
+        <div class="board-container">
+            <h2 id="team2-label">Opponent Board</h2>
+            <div class="grid-container">
+                <div class="grid" id="opponent-board"></div>
+            </div>
+        </div>
+    </div>
+
+    <div class="declare-winner-container">
+        <select id="winner-select">
+            <option value="" disabled selected>Select Winner</option>
+        </select>
+        <button class="declare-winner-btn" onclick="declareWinner()">Declare Winner</button>
+    </div>
+
+    <div class="log-container">
+        <h3>Game Log</h3>
+        <button class="clear-log-btn" onclick="clearLog()">Clear Log</button>
+        <ul id="move-log"></ul>
+    </div>
+
+    <button class="draw-line-btn" onclick="toggleDrawingMode()">Draw Line (OFF)</button>
+    <div id="drawing-container"></div>
+
+    <div class="ship-placement-ui">
+        <h3>Place Your Ships</h3>
+        <div class="board-selector">
+            <label>Select Board:</label>
+            <select id="boardSelector">
+                <option value="player-board">Player Board</option>
+                <option value="opponent-board">Opponent Board</option>
+            </select>
+        </div>
+        <select id="shipType">
+            <option value="small">Small Ship (2 cells)</option>
+            <option value="large">Large Ship (3 cells)</option>
+        </select>
+        <select id="shipOrientation">
+            <option value="horizontal">Horizontal</option>
+            <option value="vertical">Vertical</option>
+        </select>
+        <button onclick="placeShip()">Place Selected Ship</button>
+        <div class="ship-progress" id="shipProgress"></div>
+    </div>
+
+    <script>
+        // Variables for drawing functionality
+        let isDrawingMode = false;
+        let isDrawing = false;
+        let currentLine = null;
+        let startX, startY;
+        let currentBoard = null;
+
+        // Ship placement variables
+        let availableShips = {
+            "player-board": {
+                "small": 2,
+                "large": 1
+            },
+            "opponent-board": {
+                "small": 2,
+                "large": 1
+            }
+        };
+
+        let currentShip = null;
+        let placedShips = {
+            "player-board": [],
+            "opponent-board": []
+        };
+
+        // Store ship cell references for hiding after timeout
+        let shipCellsMap = {
+            "player-board": [],
+            "opponent-board": []
+        };
+
+        let setupPhase = true;
+        let currentBoardId = "player-board";
+
+        // Toggle drawing mode
+        function toggleDrawingMode() {
+            isDrawingMode = !isDrawingMode;
+            document.body.classList.toggle('drawing-mode', isDrawingMode);
+            document.querySelector('.draw-line-btn').textContent =
+                `Draw Line (${isDrawingMode ? 'ON' : 'OFF'})`;
+        }
+
+        // Handle ship placement
+        function handleShipPlacement(e) {
+            if (!setupPhase) return;
+
+            const cell = e.target;
+            const boardId = cell.closest('.grid').id;
+            if (boardId !== currentBoardId) return;
+
+            const row = parseInt(cell.dataset.row);
+            const col = parseInt(cell.dataset.col);
+
+            // Get the currently selected ship type and size
+            const shipType = document.getElementById("shipType").value;
+            const shipSize = shipType === "small" ? 2 : 3;
+
+            // Check if there are ships of this type left to place
+            if (availableShips[boardId][shipType] <= 0) {
+                alert(`No more ${shipType} ships left to place on this board!`);
+                return;
+            }
+
+            if (isValidPlacement(row, col, boardId, shipSize)) {
+                placeShipOnGrid(row, col, boardId, shipType, shipSize);
+                updateShipProgress(boardId);
+            } else {
+                alert("Invalid placement! Ensure the ship fits and doesn't overlap.");
+            }
+        }
+
+        // Check if ship placement is valid
+        function isValidPlacement(startRow, startCol, boardId, shipSize) {
+            const orientation = document.getElementById("shipOrientation").value;
+
+            if (orientation === "horizontal") {
+                if (startCol + shipSize > 5) return false;
+                for (let c = startCol; c < startCol + shipSize; c++) {
+                    const cell = document.querySelector(`#${boardId} .cell[data-row="${startRow}"][data-col="${c}"]`);
+                    // Check if this cell is part of any ship
+                    if (cell.getAttribute('data-ship')) {
+                        return false;
+                    }
+                }
+            } else {
+                if (startRow + shipSize > 6) return false;
+                for (let r = startRow; r < startRow + shipSize; r++) {
+                    const cell = document.querySelector(`#${boardId} .cell[data-row="${r}"][data-col="${startCol}"]`);
+                    // Check if this cell is part of any ship
+                    if (cell.getAttribute('data-ship')) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+        // Place ship on the grid
+        function placeShipOnGrid(startRow, startCol, boardId, shipType, shipSize) {
+            const orientation = document.getElementById("shipOrientation").value;
+            const shipCells = [];
+            const shipId = `${boardId}-${shipType}-${placedShips[boardId].length + 1}`;
+
+            if (orientation === "horizontal") {
+                for (let c = startCol; c < startCol + shipSize; c++) {
+                    const cell = document.querySelector(
+                        `#${boardId} .cell[data-row="${startRow}"][data-col="${c}"]`
+                    );
+                    cell.classList.add("ship-cell");
+                    cell.setAttribute('data-ship', shipId);
+                    shipCells.push(cell);
+                }
+            } else {
+                for (let r = startRow; r < startRow + shipSize; r++) {
+                    const cell = document.querySelector(
+                        `#${boardId} .cell[data-row="${r}"][data-col="${startCol}"]`
+                    );
+                    cell.classList.add("ship-cell");
+                    cell.setAttribute('data-ship', shipId);
+                    shipCells.push(cell);
+                }
+            }
+
+            placedShips[boardId].push({
+                id: shipId,
+                type: shipType,
+                size: shipSize,
+                cells: shipCells.map(cell => ({
+                    row: parseInt(cell.dataset.row),
+                    col: parseInt(cell.dataset.col)
+                })),
+                orientation
+            });
+
+            // Store ship cells for hiding after 1 second
+            shipCellsMap[boardId].push(...shipCells);
+
+            // Decrease the count of available ships of this type
+            availableShips[boardId][shipType]--;
+
+            // Hide the ship after 1 second
+            setTimeout(() => {
+                shipCells.forEach(cell => {
+                    cell.classList.remove("ship-cell");
+                });
+            }, 1000);
+        }
+
+        // Update ship placement progress
+        function updateShipProgress(boardId) {
+            const totalShipsLeft = availableShips[boardId]["small"] + availableShips[boardId]["large"];
+
+            if (totalShipsLeft === 0) {
+                // Check if all ships on both boards are placed
+                const otherBoard = boardId === "player-board" ? "opponent-board" : "player-board";
+                const otherBoardShipsLeft = availableShips[otherBoard]["small"] + availableShips[otherBoard]["large"];
+
+                if (otherBoardShipsLeft === 0) {
+                    document.querySelector(".ship-placement-ui").style.display = "none";
+                    document.getElementById("shipProgress").textContent = "All ships placed!";
+                    setupPhase = false;
+                    enableHitMissFunctionality();
+                    return;
+                }
+
+                // Switch to the other board if it still has ships to place
+                document.getElementById("boardSelector").value = otherBoard;
+                currentBoardId = otherBoard;
+                document.getElementById("shipProgress").textContent =
+                    `Board ${boardId} complete! Now placing on ${otherBoard}.`;
+            } else {
+                document.getElementById("shipProgress").textContent =
+                    `Placing on ${boardId}: ${availableShips[boardId]["small"]} small ships and ${availableShips[boardId]["large"]} large ships left.`;
+            }
+        }
+
+        // Replace the enableHitMissFunctionality function with this updated version
+function enableHitMissFunctionality() {
+    // Add hit/miss functionality to all cells
+    document.querySelectorAll('.cell').forEach(cell => {
+        cell.onclick = function() {
+            if (isDrawingMode) return;
+
+            const row = parseInt(this.dataset.row);
+            const col = parseInt(this.dataset.col);
+            const board = this.closest('.grid').id;
+            const playerType = board === "player-board" ? "player" : "opponent";
+
+            // Check if the cell already has a hit or miss
+            if (this.querySelector('img')) return;
+
+            // Automatically determine hit or miss based on ship presence
+            const hasShip = this.getAttribute('data-ship') !== null;
+            const move = hasShip ? "hit" : "miss";
+
+            // Update UI
+            this.innerHTML = `<img src="/static/${move}.png">`;
+            document.getElementById(`${move}-sound`).play();
+
+            // Log the move
+            const gridRow = String.fromCharCode(65 + row);
+            const gridColumn = col + 1;
+
+            fetch("/log_move", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({
+                    player: playerType,
+                    row: gridRow,
+                    column: gridColumn,
+                    move
+                })
+            }).then(() => fetchMoves());
+
+            // Check if all ships of a player are destroyed
+            checkForWinner();
+        };
+    });
+}
+
+        // Check if all ships of a player are destroyed
+        function checkForWinner() {
+            const playerBoard = "player-board";
+            const opponentBoard = "opponent-board";
+
+            const playerShipsDestroyed = areAllShipsDestroyed(playerBoard);
+            const opponentShipsDestroyed = areAllShipsDestroyed(opponentBoard);
+
+            if (playerShipsDestroyed) {
+                // If player's ships are destroyed, the opponent wins
+                declareWinnerAutomatically("opponent");
+            } else if (opponentShipsDestroyed) {
+                // If opponent's ships are destroyed, the player wins
+                declareWinnerAutomatically("player");
+            }
+        }
+
+        // Check if all ships on a board are destroyed
+        function areAllShipsDestroyed(boardId) {
+            const ships = placedShips[boardId];
+            for (const ship of ships) {
+                const cells = ship.cells;
+                for (const cell of cells) {
+                    const cellElement = document.querySelector(
+                        `#${boardId} .cell[data-row="${cell.row}"][data-col="${cell.col}"]`
+                    );
+                    if (!cellElement.querySelector('img')) {
+                        return false;
+                    }
+                }
+            }
+            return true;
+        }
+
+
+        // Automatically declare the winner
+        function declareWinnerAutomatically(winnerType) {
+            const team1 = document.getElementById("team1").value || "Team 1";
+            const team2 = document.getElementById("team2").value || "Team 2";
+            const winner = winnerType === "player" ? team1 : team2;
+
+            fetch("/declare_winner", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ team1, team2, winner })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(`All ships destroyed! ${winner} wins!`);
+                    resetGame();
+                } else {
+                    alert("Failed to declare winner: " + data.message);
+                }
+            })
+            .catch(error => console.error("Error:", error));
+        }
+
+
+        // Initialize ship placement
+        function placeShip() {
+            currentBoardId = document.getElementById("boardSelector").value;
+            const shipType = document.getElementById("shipType").value;
+
+            if (availableShips[currentBoardId][shipType] <= 0) {
+                // Try to find another ship type that's available
+                if (availableShips[currentBoardId]["small"] > 0) {
+                    document.getElementById("shipType").value = "small";
+                } else if (availableShips[currentBoardId]["large"] > 0) {
+                    document.getElementById("shipType").value = "large";
+                } else {
+                    // Check if other board has ships
+                    const otherBoard = currentBoardId === "player-board" ? "opponent-board" : "player-board";
+
+                    if (availableShips[otherBoard]["small"] > 0 || availableShips[otherBoard]["large"] > 0) {
+                        document.getElementById("boardSelector").value = otherBoard;
+                        currentBoardId = otherBoard;
+
+                        // Select first available ship type on other board
+                        if (availableShips[otherBoard]["small"] > 0) {
+                            document.getElementById("shipType").value = "small";
+                        } else {
+                            document.getElementById("shipType").value = "large";
+                        }
+                    } else {
+                        // All ships on both boards are placed
+                        document.getElementById("shipProgress").textContent = "All ships placed!";
+                        document.querySelector(".ship-placement-ui").style.display = "none";
+                        setupPhase = false;
+                        enableHitMissFunctionality();
+                        return;
+                    }
+                }
+            }
+
+            // Update ship progress display
+            updateShipProgress(currentBoardId);
+        }
+
+        // Update board selector
+        document.getElementById("boardSelector").addEventListener("change", function() {
+            currentBoardId = this.value;
+            updateShipProgress(currentBoardId);
+        });
+
+        // Fetch moves from the server
+        function fetchMoves() {
+            fetch("/get_moves")
+            .then(response => response.json())
+            .then(data => {
+                const log = document.getElementById("move-log");
+                log.innerHTML = "";
+
+                data.forEach(move => {
+                    const [player, row, column, moveType] = move;
+                    const li = document.createElement("li");
+                    li.innerHTML = `
+                        <strong>${player}:</strong>
+                        ${row}${column} -
+                        <span style="color: ${moveType === 'hit' ? 'lime' : 'red'}">
+                            ${moveType.toUpperCase()}
+                        </span>
+                    `;
+                    log.appendChild(li);
+                });
+
+                log.scrollTop = log.scrollHeight;
+            });
+        }
+
+        // Clear the game log
+        function clearLog() {
+            document.getElementById("move-log").innerHTML = "";
+            fetch("/clear_logs", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" }
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    console.log(data.message);
+                } else {
+                    console.error("Failed to clear logs:", data.message);
+                }
+            })
+            .catch(error => console.error("Error:", error));
+        }
+
+        // Update the winner dropdown
+        function updateWinnerDropdown() {
+            let team1 = document.getElementById("team1").value || "Team 1";
+            let team2 = document.getElementById("team2").value || "Team 2";
+            let dropdown = document.getElementById("winner-select");
+            dropdown.innerHTML = `
+                <option value="" disabled selected>Select Winner</option>
+                <option value="${team1}">${team1}</option>
+                <option value="${team2}">${team2}</option>
+            `;
+        }
+
+        // Declare the winner
+        function declareWinner() {
+            const winner = document.getElementById("winner-select").value;
+            if (!winner) {
+                alert("Please select a winner.");
+                return;
+            }
+
+            const team1 = document.getElementById("team1").value || "Team 1";
+            const team2 = document.getElementById("team2").value || "Team 2";
+
+            fetch("/declare_winner", {
+                method: "POST",
+                headers: { "Content-Type": "application/json" },
+                body: JSON.stringify({ team1, team2, winner })
+            })
+            .then(response => response.json())
+            .then(data => {
+                if (data.success) {
+                    alert(data.message);
+                    resetGame();
+                } else {
+                    alert("Failed to declare winner: " + data.message);
+                }
+            })
+            .catch(error => console.error("Error:", error));
+        }
+
+        // Reset the game
+        function resetGame() {
+            // Reset the display states
+            document.getElementById("game-area").style.display = "none";
+            document.getElementById("team-registration").style.display = "block";
+
+            // Clear game logs
+            clearLog();
+
+            // Reset ship placement variables
+            availableShips = {
+                "player-board": {
+                    "small": 2,
+                    "large": 1
+                },
+                "opponent-board": {
+                    "small": 2,
+                    "large": 1
+                }
+            };
+
+            placedShips = {
+                "player-board": [],
+                "opponent-board": []
+            };
+
+            // Reset ship cells map
+            shipCellsMap = {
+                "player-board": [],
+                "opponent-board": []
+            };
+
+            // Reset game state
+            setupPhase = true;
+            currentBoardId = "player-board";
+
+            // Reset video background
+            let bgVideo = document.getElementById("background-video");
+            bgVideo.src = "/static/background.mp4";
+            bgVideo.load();
+            bgVideo.play();
+
+            // Reset UI elements for ship placement
+            document.querySelector(".ship-placement-ui").style.display = "block";
+            document.getElementById("boardSelector").value = "player-board";
+            document.getElementById("shipType").value = "small";
+            document.getElementById("shipProgress").textContent =
+                "Placing on player-board: 2 small ships and 1 large ship left.";
+
+            // Reset input fields for team names
+            document.getElementById("team1").value = "";
+            document.getElementById("team2").value = "";
+
+            // Reset drawing mode if active
+            if (isDrawingMode) {
+                toggleDrawingMode();
+            }
+        }
+
+        // Generate the grid
+        function generateGrid(boardId) {
+            let board = document.getElementById(boardId);
+            board.innerHTML = "";
+            let labels = ["A", "B", "C", "D", "E", "F"];
+
+            // Create column labels
+            board.appendChild(document.createElement("div"));
+            for (let j = 1; j <= 5; j++) {
+                let colLabel = document.createElement("div");
+                colLabel.classList.add("top-label");
+                colLabel.innerText = j;
+                board.appendChild(colLabel);
+            }
+
+            // Create grid with row labels
+            for (let i = 0; i < 6; i++) {
+                let rowLabel = document.createElement("div");
+                rowLabel.classList.add("label");
+                rowLabel.innerText = labels[i];
+                board.appendChild(rowLabel);
+
+                for (let j = 0; j < 5; j++) {
+                    let cell = document.createElement("div");
+                    cell.classList.add("cell");
+                    cell.dataset.row = i;
+                    cell.dataset.col = j;
+
+                    // In setup phase, add ship placement handler
+                    cell.addEventListener("click", handleShipPlacement);
+
+                    board.appendChild(cell);
+                }
+            }
+        }
+
+        // Start the game
+        function playSoundAndStartGame() {
+            document.getElementById("button-sound").play();
+            clearLog();
+
+            let bgMusic = document.getElementById("background-music");
+            bgMusic.volume = 0.5;
+            bgMusic.muted = false;
+            bgMusic.play().catch(error => console.log("Autoplay blocked:", error));
+
+            let bgVideo = document.getElementById("background-video");
+            bgVideo.src = "/static/calm_background.mp4";
+            bgVideo.load();
+            bgVideo.play();
+
+            let team1 = document.getElementById("team1").value || "Team 1";
+            let team2 = document.getElementById("team2").value || "Team 2";
+
+            document.getElementById("team1-label").innerText = team1 + "'s Board";
+            document.getElementById("team2-label").innerText = team2 + "'s Board";
+
+            document.getElementById("team-registration").style.display = "none";
+            document.getElementById("game-area").style.display = "flex";
+
+            generateGrid("player-board");
+            generateGrid("opponent-board");
+
+            // Initialize ship placement
+            setupPhase = true;
+            currentBoardId = "player-board";
+            updateShipProgress(currentBoardId);
+
+            fetchMoves();
+            updateWinnerDropdown();
+        }
+
+        // Initialize the game when the page loads
+        window.onload = function() {
+            // Make sure ship placement UI is visible at start
+            document.querySelector(".ship-placement-ui").style.display = "block";
+            document.getElementById("shipProgress").textContent =
+                "Placing on player-board: 2 small ships and 1 large ship left.";
+        };
+    </script>
+</body>
+</html>
