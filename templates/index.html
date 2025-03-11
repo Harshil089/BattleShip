@@ -780,6 +780,171 @@ function enableHitMissFunctionality() {
             }
         }
 
+        // Function to adjust game scale based on screen size
+function adjustGameScale() {
+    const gameArea = document.getElementById('game-area');
+    const playerBoard = document.getElementById('player-board');
+    const opponentBoard = document.getElementById('opponent-board');
+
+    // Get viewport dimensions
+    const viewportWidth = window.innerWidth;
+    const viewportHeight = window.innerHeight;
+
+    // Calculate the available space for each board
+    // Account for padding, margins and gap between boards
+    const availableWidth = viewportWidth > 768
+        ? (viewportWidth - 150) / 2  // Desktop: subtract gap and some padding
+        : viewportWidth * 0.9;       // Mobile: use 90% of screen width
+
+    // Calculate cell size based on available width
+    // For a 5x6 grid plus labels, we need to fit 6 columns and 7 rows
+    const maxCellWidth = availableWidth / 6;
+
+    // Calculate the ideal cell size (smaller on mobile)
+    let cellSize = viewportWidth <= 768 ? Math.min(40, maxCellWidth) : Math.min(70, maxCellWidth);
+
+    // Adjust the grid layout
+    const grids = document.querySelectorAll('.grid');
+    grids.forEach(grid => {
+        // Set the new grid template with adjusted cell size
+        grid.style.gridTemplateColumns = `${cellSize * 0.6}px repeat(5, ${cellSize}px)`;
+        grid.style.gridTemplateRows = `${cellSize * 0.6}px repeat(6, ${cellSize}px)`;
+        grid.style.gap = `${Math.max(4, cellSize * 0.1)}px`;
+    });
+
+    // Adjust cell sizes
+    const cells = document.querySelectorAll('.cell');
+    cells.forEach(cell => {
+        cell.style.width = `${cellSize}px`;
+        cell.style.height = `${cellSize}px`;
+    });
+
+    // Adjust label sizes
+    const rowLabels = document.querySelectorAll('.label');
+    rowLabels.forEach(label => {
+        label.style.width = `${cellSize * 0.6}px`;
+        label.style.height = `${cellSize}px`;
+        label.style.fontSize = `${Math.max(12, cellSize * 0.3)}px`;
+    });
+
+    const colLabels = document.querySelectorAll('.top-label');
+    colLabels.forEach(label => {
+        label.style.width = `${cellSize}px`;
+        label.style.height = `${cellSize * 0.6}px`;
+        label.style.fontSize = `${Math.max(12, cellSize * 0.3)}px`;
+    });
+
+    // Adjust game container layout for mobile
+    if (viewportWidth <= 768) {
+        gameArea.style.flexDirection = 'column';
+        gameArea.style.gap = '30px';
+    } else {
+        gameArea.style.flexDirection = 'row';
+        gameArea.style.gap = '100px';
+    }
+
+    // Adjust UI elements position for better mobile experience
+    const logContainer = document.querySelector('.log-container');
+    const winnerContainer = document.querySelector('.declare-winner-container');
+    const shipPlacementUI = document.querySelector('.ship-placement-ui');
+
+    if (viewportWidth <= 768) {
+        // Mobile positioning
+        logContainer.style.position = 'relative';
+        logContainer.style.top = 'auto';
+        logContainer.style.right = 'auto';
+        logContainer.style.width = '90%';
+        logContainer.style.margin = '20px auto';
+
+        winnerContainer.style.position = 'relative';
+        winnerContainer.style.bottom = 'auto';
+        winnerContainer.style.right = 'auto';
+        winnerContainer.style.width = '90%';
+        winnerContainer.style.margin = '10px auto';
+
+        shipPlacementUI.style.position = 'relative';
+        shipPlacementUI.style.top = 'auto';
+        shipPlacementUI.style.left = 'auto';
+        shipPlacementUI.style.width = '90%';
+        shipPlacementUI.style.margin = '10px auto';
+    } else {
+        // Reset to desktop positioning
+        logContainer.style.position = 'absolute';
+        logContainer.style.top = '10px';
+        logContainer.style.right = '10px';
+        logContainer.style.width = '250px';
+        logContainer.style.margin = '0';
+
+        winnerContainer.style.position = 'absolute';
+        winnerContainer.style.bottom = '20px';
+        winnerContainer.style.right = '20px';
+        winnerContainer.style.width = 'auto';
+        winnerContainer.style.margin = '0';
+
+        shipPlacementUI.style.position = 'fixed';
+        shipPlacementUI.style.top = '20px';
+        shipPlacementUI.style.left = '20px';
+        shipPlacementUI.style.width = 'auto';
+        shipPlacementUI.style.margin = '0';
+    }
+}
+
+// Add these functions to detect orientation change
+function setupResponsiveness() {
+    // Initial adjustment
+    adjustGameScale();
+
+    // Listen for window resize events
+    window.addEventListener('resize', adjustGameScale);
+
+    // Listen for orientation change on mobile
+    window.addEventListener('orientationchange', adjustGameScale);
+
+    // Adjust when game starts
+    const originalPlaySoundAndStartGame = playSoundAndStartGame;
+    playSoundAndStartGame = function() {
+        originalPlaySoundAndStartGame();
+        setTimeout(adjustGameScale, 100); // Apply after DOM is updated
+    };
+
+    // Adjust after grid generation
+    const originalGenerateGrid = generateGrid;
+    generateGrid = function(boardId) {
+        originalGenerateGrid(boardId);
+        setTimeout(adjustGameScale, 100); // Apply after grid is created
+    };
+}
+
+// Call this function in window.onload
+window.onload = function() {
+    // Make sure ship placement UI is visible at start
+    document.querySelector(".ship-placement-ui").style.display = "block";
+    document.getElementById("shipProgress").textContent =
+        "Placing on player-board: 2 small ships and 1 large ship left.";
+
+    // Setup responsive behavior
+    setupResponsiveness();
+};
+
+// Add meta tag to ensure proper scaling on mobile
+function addViewportMeta() {
+    const existingMeta = document.querySelector('meta[name="viewport"]');
+    if (existingMeta) {
+        existingMeta.content = "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no";
+    } else {
+        const meta = document.createElement('meta');
+        meta.name = "viewport";
+        meta.content = "width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no";
+        document.head.appendChild(meta);
+    }
+}
+
+// Execute on page load
+document.addEventListener('DOMContentLoaded', function() {
+    addViewportMeta();
+    setupResponsiveness();
+});
+
         // Generate the grid
         function generateGrid(boardId) {
             let board = document.getElementById(boardId);
