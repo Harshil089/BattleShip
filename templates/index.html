@@ -238,6 +238,43 @@
         .board-selector {
             margin-bottom: 10px;
         }
+        .winner-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background-color: rgba(0, 0, 0, 0.8);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    z-index: 2000;
+    flex-direction: column;
+}
+
+.winner-text {
+    font-family: 'Nosifer', cursive;
+    color: red;
+    text-shadow: 3px 3px 5px black;
+    font-size: 60px;
+    text-align: center;
+    margin-bottom: 40px;
+}
+
+.restart-button {
+    font-size: 24px;
+    padding: 15px 30px;
+    border: none;
+    background: red;
+    color: white;
+    font-weight: bold;
+    cursor: pointer;
+    box-shadow: 2px 2px 5px black;
+}
+
+.restart-button:hover {
+    background: darkred;
+}
     </style>
 </head>
 <body>
@@ -601,27 +638,45 @@ function enableHitMissFunctionality() {
 
 
         // Automatically declare the winner
-        function declareWinnerAutomatically(winnerType) {
-            const team1 = document.getElementById("team1").value || "Team 1";
-            const team2 = document.getElementById("team2").value || "Team 2";
-            const winner = winnerType === "player" ? team1 : team2;
+        // Replace the declareWinnerAutomatically function
+function declareWinnerAutomatically(winnerType) {
+    const team1 = document.getElementById("team1").value || "Team 1";
+    const team2 = document.getElementById("team2").value || "Team 2";
+    const winner = winnerType === "player" ? team1 : team2;
 
-            fetch("/declare_winner", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ team1, team2, winner })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert(`All ships destroyed! ${winner} wins!`);
-                    resetGame();
-                } else {
-                    alert("Failed to declare winner: " + data.message);
-                }
-            })
-            .catch(error => console.error("Error:", error));
+    fetch("/declare_winner", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ team1, team2, winner })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Create winner overlay instead of alert
+            const overlay = document.createElement('div');
+            overlay.className = 'winner-overlay';
+
+            const winnerText = document.createElement('div');
+            winnerText.className = 'winner-text';
+            winnerText.textContent = `WINNER IS ${winner}`;
+            overlay.appendChild(winnerText);
+
+            const restartButton = document.createElement('button');
+            restartButton.className = 'restart-button';
+            restartButton.textContent = 'PLAY AGAIN';
+            restartButton.onclick = function() {
+                document.body.removeChild(overlay);
+                resetGame();
+            };
+            overlay.appendChild(restartButton);
+
+            document.body.appendChild(overlay);
+        } else {
+            alert("Failed to declare winner: " + data.message);
         }
+    })
+    .catch(error => console.error("Error:", error));
+}
 
 
         // Initialize ship placement
@@ -741,32 +796,50 @@ function enableHitMissFunctionality() {
         }
 
         // Declare the winner
-        function declareWinner() {
-            const winner = document.getElementById("winner-select").value;
-            if (!winner) {
-                alert("Please select a winner.");
-                return;
-            }
+        // Update the declareWinner function
+function declareWinner() {
+    const winner = document.getElementById("winner-select").value;
+    if (!winner) {
+        alert("Please select a winner.");
+        return;
+    }
 
-            const team1 = document.getElementById("team1").value || "Team 1";
-            const team2 = document.getElementById("team2").value || "Team 2";
+    const team1 = document.getElementById("team1").value || "Team 1";
+    const team2 = document.getElementById("team2").value || "Team 2";
 
-            fetch("/declare_winner", {
-                method: "POST",
-                headers: { "Content-Type": "application/json" },
-                body: JSON.stringify({ team1, team2, winner })
-            })
-            .then(response => response.json())
-            .then(data => {
-                if (data.success) {
-                    alert(data.message);
-                    resetGame();
-                } else {
-                    alert("Failed to declare winner: " + data.message);
-                }
-            })
-            .catch(error => console.error("Error:", error));
+    fetch("/declare_winner", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ team1, team2, winner })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.success) {
+            // Create winner overlay instead of alert
+            const overlay = document.createElement('div');
+            overlay.className = 'winner-overlay';
+
+            const winnerText = document.createElement('div');
+            winnerText.className = 'winner-text';
+            winnerText.textContent = `WINNER IS ${winner}`;
+            overlay.appendChild(winnerText);
+
+            const restartButton = document.createElement('button');
+            restartButton.className = 'restart-button';
+            restartButton.textContent = 'PLAY AGAIN';
+            restartButton.onclick = function() {
+                document.body.removeChild(overlay);
+                resetGame();
+            };
+            overlay.appendChild(restartButton);
+
+            document.body.appendChild(overlay);
+        } else {
+            alert("Failed to declare winner: " + data.message);
         }
+    })
+    .catch(error => console.error("Error:", error));
+}
 
         // Reset the game
         function resetGame() {
