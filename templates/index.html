@@ -501,8 +501,31 @@ function enableHitMissFunctionality() {
             const board = this.closest('.grid').id;
             const playerType = board === "player-board" ? "player" : "opponent";
 
-            // Check if the cell already has a hit or miss
-            if (this.querySelector('img')) return;
+            // Check if the cell already has a hit or miss (undo functionality)
+            if (this.querySelector('img')) {
+                // Get the current move type
+                const currentMoveType = this.querySelector('img').src.includes('hit.png') ? 'hit' : 'miss';
+
+                // Remove the hit/miss image
+                this.innerHTML = '';
+
+                // Log the undo action
+                const gridRow = String.fromCharCode(65 + row);
+                const gridColumn = col + 1;
+
+                fetch("/log_move", {
+                    method: "POST",
+                    headers: { "Content-Type": "application/json" },
+                    body: JSON.stringify({
+                        player: playerType,
+                        row: gridRow,
+                        column: gridColumn,
+                        move: `undo-${currentMoveType}`
+                    })
+                }).then(() => fetchMoves());
+
+                return;
+            }
 
             // Automatically determine hit or miss based on ship presence
             const hasShip = this.getAttribute('data-ship') !== null;
@@ -533,22 +556,23 @@ function enableHitMissFunctionality() {
     });
 }
 
+
         // Check if all ships of a player are destroyed
         function checkForWinner() {
-            const playerBoard = "player-board";
-            const opponentBoard = "opponent-board";
+    const playerBoard = "player-board";
+    const opponentBoard = "opponent-board";
 
-            const playerShipsDestroyed = areAllShipsDestroyed(playerBoard);
-            const opponentShipsDestroyed = areAllShipsDestroyed(opponentBoard);
+    const playerShipsDestroyed = areAllShipsDestroyed(playerBoard);
+    const opponentShipsDestroyed = areAllShipsDestroyed(opponentBoard);
 
-            if (playerShipsDestroyed) {
-                // If player's ships are destroyed, the opponent wins
-                declareWinnerAutomatically("opponent");
-            } else if (opponentShipsDestroyed) {
-                // If opponent's ships are destroyed, the player wins
-                declareWinnerAutomatically("player");
-            }
-        }
+    if (playerShipsDestroyed) {
+        // If player's ships are destroyed, the opponent wins
+        declareWinnerAutomatically("opponent");
+    } else if (opponentShipsDestroyed) {
+        // If opponent's ships are destroyed, the player wins
+        declareWinnerAutomatically("player");
+    }
+}
 
         // Check if all ships on a board are destroyed
         function areAllShipsDestroyed(boardId) {
@@ -639,29 +663,44 @@ function enableHitMissFunctionality() {
         });
 
         // Fetch moves from the server
-        function fetchMoves() {
-            fetch("/get_moves")
-            .then(response => response.json())
-            .then(data => {
-                const log = document.getElementById("move-log");
-                log.innerHTML = "";
+    function fetchMoves() {
+    fetch("/get_moves")
+    .then(response => response.json())
+    .then(data => {
+        const log = document.getElementById("move-log");
+        log.innerHTML = "";
 
-                data.forEach(move => {
-                    const [player, row, column, moveType] = move;
-                    const li = document.createElement("li");
-                    li.innerHTML = `
-                        <strong>${player}:</strong>
-                        ${row}${column} -
-                        <span style="color: ${moveType === 'hit' ? 'lime' : 'red'}">
-                            ${moveType.toUpperCase()}
-                        </span>
-                    `;
-                    log.appendChild(li);
-                });
+        data.forEach(move => {
+            const [player, row, column, moveType] = move;
+            const li = document.createElement("li");
 
-                log.scrollTop = log.scrollHeight;
-            });
-        }
+            // Check if this is an undo action
+            if (moveType.startsWith('undo-')) {
+                const originalMove = moveType.replace('undo-', '');
+                li.innerHTML = `
+                    <strong>${player}:</strong>
+                    ${row}${column} -
+                    <span style="color: orange">
+                        UNDO ${originalMove.toUpperCase()}
+                    </span>
+                `;
+            } else {
+                li.innerHTML = `
+                    <strong>${player}:</strong>
+                    ${row}${column} -
+                    <span style="color: ${moveType === 'hit' ? 'lime' : 'red'}">
+                        ${moveType.toUpperCase()}
+                    </span>
+                `;
+            }
+
+            log.appendChild(li);
+        });
+
+        log.scrollTop = log.scrollHeight;
+    });
+}
+
 
         // Clear the game log
         function clearLog() {
